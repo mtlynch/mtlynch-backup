@@ -1,0 +1,7 @@
+backup-paths*.txt
+excludes*.txt
+repos*.json
+resticpy/*
+venv
+user-scripts
+logs/*
