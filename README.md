@@ -22,6 +22,8 @@ If you'd like to re-use or adapt this script, it's simple to run yourself.
 
 * restic binary installed
 * Python3.7 or above
+* python-venv
+* Restic backup repositories (already initialized)
 
 ### Create a pip virtual environment
 
@@ -33,10 +35,10 @@ python3 -m venv venv && \
 
 ### Create repos file
 
-Create a JSON file that contains information about your cloud storage buckets. The script supports S3-style buckets and Backblaze B2 buckets. You can place one or more repos in this file:
+Create a JSON file that contains information about the cloud storage buckets containing your restic repositories. The script supports S3-style buckets and Backblaze B2 buckets. You can place one or more repos in this file:
 
-```javascript
-$ cat > repos.json <<EOF
+```bash
+cat > repos.json <<EOF
 [
   {
     "accessKeyId": "your-s3-access-key-id",
@@ -88,7 +90,7 @@ With everything in place, run the backup script:
 # Replace with number of daily snapshots you want to keep.
 DAILY_SNAPSHOTS_TO_KEEP=60
 
-.\backup.py \
+./backup.py \
   --repos-file repos.json \
   --backup-paths-file backup-paths.txt \
   --exclude-file excludes.txt \

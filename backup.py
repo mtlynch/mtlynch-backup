@@ -10,7 +10,6 @@ import os.path
 import restic
 
 logger = logging.getLogger(__name__)
-locale.setlocale(locale.LC_ALL, 'en_US')
 
 
 def configure_logging():
