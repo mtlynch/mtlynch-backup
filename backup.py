@@ -106,7 +106,7 @@ def format_integer(integer):
 
 
 def human_time(value, units=['seconds', 'minutes', 'hours']):
-    return ('%.1f ' % value) + units[0] if value < 60 else human_size(
+    return ('%.1f ' % value) + units[0] if value < 60 else human_time(
         value / 60.0, units[1:])
 
 
