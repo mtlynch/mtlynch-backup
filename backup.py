@@ -143,13 +143,15 @@ def main(args):
         restic.binary_path = args.restic_path
     restic.password_file = args.password_file
     print_version()
-    backup_paths = read_backup_paths(args.backup_paths_file)
-    repos = read_repos(args.repos_file)
-    process_repos(repos, backup_paths, args.exclude, args.exclude_file,
-                  args.keep_daily)
-    logger.info('Backups complete!')
-    clear_environment_variables()
-    logger.info('Cleared environment variables')
+    try:
+        backup_paths = read_backup_paths(args.backup_paths_file)
+        repos = read_repos(args.repos_file)
+        process_repos(repos, backup_paths, args.exclude, args.exclude_file,
+                    args.keep_daily)
+        logger.info('Backups complete!')
+    finally:
+        clear_environment_variables()
+        logger.info('Cleared environment variables')
 
 
 if __name__ == '__main__':
