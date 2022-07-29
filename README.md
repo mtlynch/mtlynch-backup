@@ -8,7 +8,9 @@ This is a simple script that I use to back up my personal data.
 
 It is a working example of using my [resticpy](https://github.com/mtlynch/resticpy) library.
 
-The script is meant to run once per day. It performs the following actions:
+The script is meant to run as a regularly scheduled task per day using a tool such as cron or Windows Task Scheduler.
+
+This script performs the following actions:
 
 * Backs up specified paths to one or more cloud backup locations
 * Prunes expired data on cloud storage from the backups
