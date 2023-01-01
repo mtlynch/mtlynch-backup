@@ -6,6 +6,7 @@ import locale
 import logging
 import os
 import os.path
+import urllib.request
 
 import restic
 
@@ -21,6 +22,14 @@ def configure_logging():
     handler.setFormatter(formatter)
     root_logger.addHandler(handler)
     root_logger.setLevel(logging.INFO)
+
+
+def report_job_start(cronitor_url):
+    urllib.request.urlopen(f'{cronitor_url}?state=run')
+
+
+def report_job_success(cronitor_url):
+    urllib.request.urlopen(f'{cronitor_url}?state=complete')
 
 
 def process_repos(repos, backup_paths, exclude_patterns, exclude_files,
@@ -141,6 +150,9 @@ def main(args):
     configure_logging()
     if args.restic_path:
         restic.binary_path = args.restic_path
+    if args.cronitor_url:
+        report_job_start(args.cronitor_url)
+
     restic.password_file = args.password_file
     print_version()
     try:
@@ -152,6 +164,8 @@ def main(args):
     finally:
         clear_environment_variables()
         logger.info('Cleared environment variables')
+    if args.cronitor_url:
+        report_job_success(args.cronitor_url)
 
 
 if __name__ == '__main__':
@@ -169,6 +183,8 @@ if __name__ == '__main__':
     parser.add_argument('--repos-file',
                         required=True,
                         help='JSON file containing a list of backup repos')
+    parser.add_argument('--cronitor-url',
+                        help='URL of cronitor monitor for reporting job status')
     parser.add_argument('--exclude-file', action='append', default=[])
     parser.add_argument('--exclude', action='append', default=[])
     parser.add_argument('--keep-daily', type=int)
