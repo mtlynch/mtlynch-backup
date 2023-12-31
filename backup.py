@@ -34,7 +34,10 @@ def process_repo(repo, backup_paths, exclude_patterns, exclude_files,
                  keep_daily):
     try:
         back_up(repo, backup_paths, exclude_patterns, exclude_files)
-        prune_backups(repo, keep_daily)
+        if keep_daily > 0:
+            prune_backups(repo, keep_daily)
+        else:
+            logger.info('Skipping prune because nothing would be removed')
         check_stats(repo)
     except Exception as e:
         logger.error('Processing repo failed: %s', str(e))
@@ -82,7 +85,7 @@ def back_up(repo, backup_paths, exclude_patterns, exclude_files):
 
 
 def prune_backups(repo, keep_daily):
-    logger.info('Pruning repo %s...', repo['url'])
+    logger.info('Pruning repo %s with keep_daily=%s...', repo['url'], keep_daily)
     set_repo_environment_variables(repo)
     restic.unlock()
     restic.forget(prune=True, keep_daily=keep_daily)
