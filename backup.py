@@ -39,6 +39,7 @@ def process_repo(repo, backup_paths, exclude_patterns, exclude_files,
         else:
             logger.info('Skipping prune because nothing would be removed')
         check_stats(repo)
+        check_snapshot_count(repo)
     except Exception as e:
         logger.error('Processing repo failed: %s', str(e))
 
@@ -97,6 +98,14 @@ def check_stats(repo):
     set_repo_environment_variables(repo)
     restic.unlock()
     log_stats_result(restic.stats(mode='files-by-contents'))
+
+
+def check_snapshot_count(repo):
+    logger.info('Counting snapshots for repo %s...', repo['url'])
+    set_repo_environment_variables(repo)
+    restic.unlock()
+    snapshot_count = len(restic.snapshots())
+    logger.info('%d snapshots', snapshot_count)
 
 
 def human_size(bytes, units=[' bytes', ' KB', ' MB', ' GB', ' TB']):
