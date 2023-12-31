@@ -1,5 +1,6 @@
 backup-paths*.txt
 excludes*.txt
+forgets*.txt
 repos*.json
 resticpy/*
 venv
