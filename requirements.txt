@@ -1,1 +1,2 @@
 resticpy==1.0.3
+influxdb==5.3.1

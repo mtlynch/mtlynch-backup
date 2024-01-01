@@ -6,10 +6,14 @@ import locale
 import logging
 import os
 import os.path
+import traceback
 
 import restic
 
+import influx
+
 logger = logging.getLogger(__name__)
+influx_writer = None
 
 
 def configure_logging():
@@ -21,6 +25,15 @@ def configure_logging():
     handler.setFormatter(formatter)
     root_logger.addHandler(handler)
     root_logger.setLevel(logging.INFO)
+
+
+def configure_influx(host, port, database):
+    global influx_writer
+    if not host:
+        logger.info('skipping writes to influx, as no influx DB is configured')
+        return
+    logger.info('writing to influx DB at %s:%d (%s)', host, port, database)
+    influx_writer = influx.InfluxWriter(host=host, port=port, database=database)
 
 
 def process_repos(repos, backup_paths, exclude_patterns, exclude_files,
@@ -41,7 +54,7 @@ def process_repo(repo, backup_paths, exclude_patterns, exclude_files,
         check_stats(repo)
         check_snapshot_count(repo)
     except Exception as e:
-        logger.error('Processing repo failed: %s', str(e))
+        logger.error('Processing repo failed: %s %s', str(e), traceback.print_exception(e))
 
 
 def print_version():
@@ -83,6 +96,7 @@ def back_up(repo, backup_paths, exclude_patterns, exclude_files):
                            exclude_patterns=exclude_patterns,
                            exclude_files=exclude_files)
     log_backup_result(result)
+    write_dict_to_influx(result, repo['url'], exclude_keys=['message_type', 'snapshot_id'])
 
 
 def prune_backups(repo, keep_daily):
@@ -97,15 +111,9 @@ def check_stats(repo):
     logger.info('Retrieving stats for repo %s...', repo['url'])
     set_repo_environment_variables(repo)
     restic.unlock()
-    log_stats_result(restic.stats(mode='files-by-contents'))
-
-
-def check_snapshot_count(repo):
-    logger.info('Counting snapshots for repo %s...', repo['url'])
-    set_repo_environment_variables(repo)
-    restic.unlock()
-    snapshot_count = len(restic.snapshots())
-    logger.info('%d snapshots', snapshot_count)
+    stats_result = restic.stats(mode='files-by-contents')
+    log_stats_result(stats_result)
+    write_dict_to_influx(stats_result, repo['url'])
 
 
 def human_size(bytes, units=[' bytes', ' KB', ' MB', ' GB', ' TB']):
@@ -133,10 +141,23 @@ def log_backup_result(backup_result):
     logger.info('Duration: %s', human_time(backup_result['total_duration']))
 
 
+def write_dict_to_influx(d, repo_url, exclude_keys=None):
+    for k, v in d.items():
+        if exclude_keys and k in exclude_keys:
+            continue
+        write_influx_measurment(k, v, repo_url=repo_url)
+
+
 def log_stats_result(stats_result):
     logger.info('%s files (%s)',
                 format_integer(stats_result['total_file_count']),
                 human_size(stats_result['total_size']))
+    logger.info('%d snapshots', stats_result['snapshots_count'])
+
+
+def write_influx_measurment(measurement_name, measurement_value, repo_url):
+    global influx_writer
+    influx_writer.write_measurement(measurement_name=measurement_name, measurement_value=measurement_value, repo=repo_url)
 
 
 def clear_environment_variables():
@@ -151,6 +172,7 @@ def clear_environment_variables():
 
 def main(args):
     configure_logging()
+    configure_influx(args.influx_host, args.influx_port, args.influx_database)
     if args.restic_path:
         restic.binary_path = args.restic_path
     restic.password_file = args.password_file
@@ -184,6 +206,9 @@ if __name__ == '__main__':
     parser.add_argument('--exclude-file', action='append', default=[])
     parser.add_argument('--exclude', action='append', default=[])
     parser.add_argument('--keep-daily', type=int)
+    parser.add_argument('--influx-host', type=str)
+    parser.add_argument('--influx-port', type=int, default=8086)
+    parser.add_argument('--influx-database', type=str)
     main(parser.parse_args())
 
 

@@ -6,3 +6,5 @@ resticpy/*
 venv
 user-scripts
 logs/*
+test-data/
+__pycache__
