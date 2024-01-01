@@ -52,7 +52,6 @@ def process_repo(repo, backup_paths, exclude_patterns, exclude_files,
         else:
             logger.info('Skipping prune because nothing would be removed')
         check_stats(repo)
-        check_snapshot_count(repo)
     except Exception as e:
         logger.error('Processing repo failed: %s %s', str(e), traceback.print_exception(e))
 
