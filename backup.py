@@ -6,6 +6,7 @@ import locale
 import logging
 import os
 import os.path
+import time
 import traceback
 
 import restic
@@ -108,9 +109,11 @@ def prune_backups(repo, keep_daily):
 
 def check_stats(repo):
     logger.info('Retrieving stats for repo %s...', repo['url'])
+    stats_start_time = time.time()
     set_repo_environment_variables(repo)
     restic.unlock()
     stats_result = restic.stats(mode='files-by-contents')
+    stats_result['stats_duration'] = time.time() - stats_start_time
     log_stats_result(stats_result)
     write_dict_to_influx(stats_result, repo['url'])
 
