@@ -37,19 +37,27 @@ def configure_influx(host, port, database):
     influx_writer = influx.InfluxWriter(host=host, port=port, database=database)
 
 
+def _parse_forget_policy(args):
+    policy = {}
+    for arg in vars(args):
+        if arg.startswith('keep_'):
+            policy[arg] = getattr(args, arg)
+    return policy
+
+
 def process_repos(repos, backup_paths, exclude_patterns, exclude_files,
-                  keep_daily):
+                  forget_policy):
     for repo in repos:
         process_repo(repo, backup_paths, exclude_patterns, exclude_files,
-                     keep_daily)
+                     forget_policy)
 
 
 def process_repo(repo, backup_paths, exclude_patterns, exclude_files,
-                 keep_daily):
+                 forget_policy):
     try:
         back_up(repo, backup_paths, exclude_patterns, exclude_files)
-        if keep_daily > 0:
-            prune_backups(repo, keep_daily)
+        if forget_policy:
+            prune_backups(repo, forget_policy)
         else:
             logger.info('Skipping prune because nothing would be removed')
         check_stats(repo)
@@ -99,11 +107,11 @@ def back_up(repo, backup_paths, exclude_patterns, exclude_files):
     write_dict_to_influx(result, repo['url'], exclude_keys=['message_type', 'snapshot_id'])
 
 
-def prune_backups(repo, keep_daily):
-    logger.info('Pruning repo %s with keep_daily=%s...', repo['url'], keep_daily)
+def prune_backups(repo, forget_policy):
+    logger.info('Pruning repo %s with policy=%s...', repo['url'], forget_policy)
     set_repo_environment_variables(repo)
     restic.unlock()
-    restic.forget(prune=True, keep_daily=keep_daily)
+    restic.forget(prune=True, group_by='host', **forget_policy)
     logger.info('Prune complete')
 
 
@@ -179,11 +187,12 @@ def main(args):
         restic.binary_path = args.restic_path
     restic.password_file = args.password_file
     print_version()
+    forget_policy = _parse_forget_policy(args)
     try:
         backup_paths = read_backup_paths(args.backup_paths_file)
         repos = read_repos(args.repos_file)
         process_repos(repos, backup_paths, args.exclude, args.exclude_file,
-                    args.keep_daily)
+                      forget_policy)
         logger.info('Backups complete!')
     finally:
         clear_environment_variables()
@@ -208,6 +217,9 @@ if __name__ == '__main__':
     parser.add_argument('--exclude-file', action='append', default=[])
     parser.add_argument('--exclude', action='append', default=[])
     parser.add_argument('--keep-daily', type=int)
+    parser.add_argument('--keep-weekly', type=int)
+    parser.add_argument('--keep-monthly', type=int)
+    parser.add_argument('--keep-yearly', type=int)
     parser.add_argument('--influx-host', type=str)
     parser.add_argument('--influx-port', type=int, default=8086)
     parser.add_argument('--influx-database', type=str)
