@@ -47,22 +47,26 @@ def _parse_forget_policy(args):
 
 def process_repos(repos, backup_paths, exclude_patterns, exclude_files,
                   forget_policy):
+    last_error = None
     for repo in repos:
-        process_repo(repo, backup_paths, exclude_patterns, exclude_files,
-                     forget_policy)
+        try:
+            process_repo(repo, backup_paths, exclude_patterns, exclude_files,
+                        forget_policy)
+        except Exception as e:
+            logger.error('Processing repo failed: %s %s', str(e), traceback.print_exception(e))
+            last_error = e
+    if last_error:
+        raise last_error
 
 
 def process_repo(repo, backup_paths, exclude_patterns, exclude_files,
                  forget_policy):
-    try:
         back_up(repo, backup_paths, exclude_patterns, exclude_files)
         if forget_policy:
             prune_backups(repo, forget_policy)
         else:
             logger.info('Skipping prune because nothing would be removed')
         check_stats(repo)
-    except Exception as e:
-        logger.error('Processing repo failed: %s %s', str(e), traceback.print_exception(e))
 
 
 def print_version():
