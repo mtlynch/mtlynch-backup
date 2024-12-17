@@ -228,8 +228,3 @@ if __name__ == '__main__':
     parser.add_argument('--influx-port', type=int, default=8086)
     parser.add_argument('--influx-database', type=str)
     main(parser.parse_args())
-
-
-def configure_global_settings():
-    restic.binary_path = 'c:\\restic\\restic.exe'
-    restic.password_file = 'C:\\restic\\pass.txt'
