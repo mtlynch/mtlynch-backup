@@ -7,4 +7,6 @@ venv
 user-scripts
 logs/*
 test-data/
+data/
+data-test/
 __pycache__
