@@ -23,8 +23,7 @@ If you'd like to re-use or adapt this script, it's simple to run yourself.
 ## Pre-requisites
 
 * restic binary installed
-* Python3.7 or above
-* python-venv
+* Python3.12 or above
 * Restic backup repositories (already initialized)
 
 ### Create a pip virtual environment
