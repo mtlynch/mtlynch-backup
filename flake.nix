@@ -117,7 +117,6 @@
                 Type = "oneshot";
                 ExecStart = "${self.packages.${pkgs.system}.default}/bin/backup";
                 PrivateTmp = true;
-                IPAddressAllow = [ "cronitor.link" ];
               };
             };
 
