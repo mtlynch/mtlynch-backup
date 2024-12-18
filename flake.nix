@@ -16,22 +16,63 @@
     let
       python-nixpkgs = inputs.python-nixpkgs.legacyPackages.${system};
       restic-nixpkgs = inputs.restic-nixpkgs.legacyPackages.${system};
+
+      packages = [
+        python-nixpkgs.python3
+        python-nixpkgs.python312Packages.pip
+        python-nixpkgs.python312Packages.virtualenv
+        restic-nixpkgs.restic
+      ];
+
+      script = python-nixpkgs.writeShellScript "backup" ''
+        #!/usr/bin/env bash
+        set -eux
+
+        . venv/bin/activate
+        pip install -r requirements.txt
+
+        . .env.prod
+
+        ./backup.py \
+          --password-file "$PASSWORD_FILE" \
+          --backup-paths-file "$BACKUP_PATHS_FILE" \
+          --repos-file "$REPOS_FILE" \
+          --exclude-file "$EXCLUDE_FILE" \
+          --exclude '~$*' \
+          --keep-daily "$KEEP_DAILY" \
+          --keep-weekly "$KEEP_WEEKLY" \
+          --keep-monthly "$KEEP_MONTHLY" \
+          --keep-yearly "$KEEP_YEARLY" \
+          --influx-host "$INFLUX_HOST" \
+          --influx-port "$INFLUX_PORT" \
+          --influx-database "$INFLUX_DATABASE"
+
+      '';
     in
     {
       devShells.default = python-nixpkgs.mkShell {
-        packages = [
-          python-nixpkgs.python3
-          python-nixpkgs.python312Packages.pip
-          python-nixpkgs.python312Packages.virtualenv
-          restic-nixpkgs.restic
-        ];
-
+        inherit packages;
         shellHook = ''
           python --version
           pip --version
           virtualenv --version
           restic version
         '';
+      };
+
+      packages.default = python-nixpkgs.symlinkJoin {
+        name = "backup-env";
+        paths = packages;
+        buildInputs = [ python-nixpkgs.makeWrapper ];
+        postBuild = ''
+          makeWrapper ${script} $out/bin/backup \
+            --prefix PATH : ${python-nixpkgs.lib.makeBinPath packages}
+        '';
+      };
+
+      apps.default = {
+        type = "app";
+        program = "${self.packages.${system}.default}/bin/backup";
       };
     });
 }

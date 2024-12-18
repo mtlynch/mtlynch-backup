@@ -7,6 +7,11 @@ venv
 user-scripts
 logs/*
 test-data/
-data/
-data-test/
+settings/
+settings-test/
 __pycache__
+
+# Environment variables, which may contain secrets
+.env.*
+# .env.example is an exception as it only contains dummy secrets.
+!.env.example
