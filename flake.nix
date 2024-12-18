@@ -178,8 +178,14 @@
         paths = packages;
         buildInputs = [ python-nixpkgs.makeWrapper ];
         postBuild = ''
+          # Copy the backup files to the output
+          mkdir -p $out/share/backup
+          cp ${./backup.py} $out/share/backup/
+          cp ${./requirements.txt} $out/share/backup/
+
           makeWrapper ${script} $out/bin/backup \
-            --prefix PATH : ${python-nixpkgs.lib.makeBinPath packages}
+            --prefix PATH : ${python-nixpkgs.lib.makeBinPath packages} \
+            --run "cd $out/share/backup"
         '';
       };
 
