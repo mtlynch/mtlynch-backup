@@ -137,17 +137,25 @@
         #!/usr/bin/env bash
         set -eux
 
-        readonly VIRTUALENV_DIR='.venv'
+        # Create temp directory for virtualenv
+        TMPDIR=$(mktemp -d)
+        readonly VIRTUALENV_DIR="$TMPDIR/restic-backup-venv"
+        trap 'rm -rf "$TMPDIR"' EXIT
 
-        # Set up virtualenv if it doesn't exist.
-        if [ ! -d "$VIRTUALENV_DIR" ]; then
-          virtualenv "$VIRTUALENV_DIR"
-        fi
-
+        # Setup virtualenv
+        virtualenv "$VIRTUALENV_DIR"
         . "$VIRTUALENV_DIR/bin/activate"
-        pip install -r requirements.txt
 
-        ./backup.py \
+        # Copy files to temp dir.
+        cp ${./requirements.txt} "$TMPDIR/requirements.txt"
+        cp ${./backup.py} "$TMPDIR/backup.py"
+        cp ${./influx.py} "$TMPDIR/influx.py"
+
+        # Install requirements
+        pip install -r "$TMPDIR/requirements.txt"
+
+        # Run backup script
+        "$TMPDIR/backup.py" \
           --password-file "$PASSWORD_FILE" \
           --backup-paths-file "$BACKUP_PATHS_FILE" \
           --repos-file "$REPOS_FILE" \
