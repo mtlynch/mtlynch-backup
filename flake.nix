@@ -139,6 +139,7 @@
         python-nixpkgs.python312Packages.pip
         python-nixpkgs.python312Packages.virtualenv
         restic-nixpkgs.restic
+        python-nixpkgs.curl
       ];
 
       script = python-nixpkgs.writeShellScript "backup" ''
