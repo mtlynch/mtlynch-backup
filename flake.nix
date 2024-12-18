@@ -12,7 +12,116 @@
   };
 
   outputs = { self, flake-utils, python-nixpkgs, restic-nixpkgs }@inputs :
-    flake-utils.lib.eachDefaultSystem (system:
+    {
+      nixosModules.default = { config, lib, pkgs, ... }:
+        let
+          cfg = config.services.restic-backup;
+        in {
+          options.services.restic-backup = {
+            enable = lib.mkEnableOption "Restic backup service";
+
+            passwordFile = lib.mkOption {
+              type = lib.types.str;
+              description = "Path to restic password file";
+            };
+
+            backupPathsFile = lib.mkOption {
+              type = lib.types.str;
+              description = "Path to backup paths file";
+            };
+
+            reposFile = lib.mkOption {
+              type = lib.types.str;
+              description = "Path to repos config file";
+            };
+
+            excludeFile = lib.mkOption {
+              type = lib.types.str;
+              description = "Path to excludes file";
+            };
+
+            keepDaily = lib.mkOption {
+              type = lib.types.int;
+              default = 7;
+              description = "Number of daily snapshots to keep";
+            };
+
+            keepWeekly = lib.mkOption {
+              type = lib.types.int;
+              default = 4;
+              description = "Number of weekly snapshots to keep";
+            };
+
+            keepMonthly = lib.mkOption {
+              type = lib.types.int;
+              default = 5;
+              description = "Number of monthly snapshots to keep";
+            };
+
+            keepYearly = lib.mkOption {
+              type = lib.types.int;
+              default = 10;
+              description = "Number of yearly snapshots to keep";
+            };
+
+            influxHost = lib.mkOption {
+              type = lib.types.str;
+              description = "InfluxDB host";
+            };
+
+            influxPort = lib.mkOption {
+              type = lib.types.int;
+              description = "InfluxDB port";
+            };
+
+            influxDatabase = lib.mkOption {
+              type = lib.types.str;
+              description = "InfluxDB database name";
+            };
+
+            timer = lib.mkOption {
+              type = lib.types.str;
+              default = "daily";
+              description = "Systemd calendar expression for backup frequency";
+            };
+          };
+
+          config = lib.mkIf cfg.enable {
+            systemd.services.restic-backup = {
+              description = "Restic Backup Service";
+              after = [ "network.target" ];
+              wants = [ "network.target" ];
+
+              environment = {
+                PASSWORD_FILE = cfg.passwordFile;
+                BACKUP_PATHS_FILE = cfg.backupPathsFile;
+                REPOS_FILE = cfg.reposFile;
+                EXCLUDE_FILE = cfg.excludeFile;
+                KEEP_DAILY = toString cfg.keepDaily;
+                KEEP_WEEKLY = toString cfg.keepWeekly;
+                KEEP_MONTHLY = toString cfg.keepMonthly;
+                KEEP_YEARLY = toString cfg.keepYearly;
+                INFLUX_HOST = cfg.influxHost;
+                INFLUX_PORT = toString cfg.influxPort;
+                INFLUX_DATABASE = cfg.influxDatabase;
+              };
+
+              serviceConfig = {
+                Type = "oneshot";
+                ExecStart = "${self.packages.${pkgs.system}.default}/bin/backup";
+              };
+            };
+
+            systemd.timers.restic-backup = {
+              wantedBy = [ "timers.target" ];
+              timerConfig = {
+                OnCalendar = cfg.timer;
+                Persistent = true;
+              };
+            };
+          };
+        };
+    } // (flake-utils.lib.eachDefaultSystem (system:
     let
       python-nixpkgs = inputs.python-nixpkgs.legacyPackages.${system};
       restic-nixpkgs = inputs.restic-nixpkgs.legacyPackages.${system};
@@ -28,10 +137,15 @@
         #!/usr/bin/env bash
         set -eux
 
-        . venv/bin/activate
-        pip install -r requirements.txt
+        readonly VIRTUALENV_DIR='.venv'
 
-        . .env.prod
+        # Set up virtualenv if it doesn't exist.
+        if [ ! -d "$VIRTUALENV_DIR" ]; then
+          virtualenv "$VIRTUALENV_DIR"
+        fi
+
+        . "$VIRTUALENV_DIR/bin/activate"
+        pip install -r requirements.txt
 
         ./backup.py \
           --password-file "$PASSWORD_FILE" \
@@ -46,7 +160,6 @@
           --influx-host "$INFLUX_HOST" \
           --influx-port "$INFLUX_PORT" \
           --influx-database "$INFLUX_DATABASE"
-
       '';
     in
     {
@@ -74,5 +187,5 @@
         type = "app";
         program = "${self.packages.${system}.default}/bin/backup";
       };
-    });
+    }));
 }
