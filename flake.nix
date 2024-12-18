@@ -79,6 +79,12 @@
               description = "InfluxDB database name";
             };
 
+            cronitorUrl = lib.mkOption {
+              type = lib.types.str;
+              default = "";
+              description = "Cronitor monitoring URL (optional)";
+            };
+
             timer = lib.mkOption {
               type = lib.types.str;
               default = "daily";
@@ -104,12 +110,14 @@
                 INFLUX_HOST = cfg.influxHost;
                 INFLUX_PORT = toString cfg.influxPort;
                 INFLUX_DATABASE = cfg.influxDatabase;
+                CRONITOR_URL = cfg.cronitorUrl;
               };
 
               serviceConfig = {
                 Type = "oneshot";
                 ExecStart = "${self.packages.${pkgs.system}.default}/bin/backup";
                 PrivateTmp = true;
+                IPAddressAllow = [ "cronitor.link" ];
               };
             };
 
@@ -137,6 +145,11 @@
       script = python-nixpkgs.writeShellScript "backup" ''
         #!/usr/bin/env bash
         set -eux
+
+        # Notify Cronitor if URL is defined
+        if [ -v CRONITOR_URL ] && [ -n "$CRONITOR_URL" ]; then
+          curl --silent --location --fail "$CRONITOR_URL?state=run"
+        fi
 
         # Create temp directory for virtualenv
         TMPDIR=$(mktemp -d)
@@ -169,6 +182,11 @@
           --influx-host "$INFLUX_HOST" \
           --influx-port "$INFLUX_PORT" \
           --influx-database "$INFLUX_DATABASE"
+
+        # Notify Cronitor if URL is defined
+        if [ -v CRONITOR_URL ] && [ -n "$CRONITOR_URL" ]; then
+          curl --silent --location --fail "$CRONITOR_URL?state=complete"
+        fi
       '';
     in
     {
