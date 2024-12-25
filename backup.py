@@ -6,6 +6,7 @@ import locale
 import logging
 import os
 import os.path
+import random
 import time
 import traceback
 
@@ -48,7 +49,7 @@ def _parse_forget_policy(args):
 def process_repos(repos, backup_paths, exclude_patterns, exclude_files,
                   forget_policy):
     last_error = None
-    for repo in repos:
+    for repo in random.sample(repos, len(repos)):
         try:
             process_repo(repo, backup_paths, exclude_patterns, exclude_files,
                         forget_policy)
