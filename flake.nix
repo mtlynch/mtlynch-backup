@@ -116,7 +116,7 @@
                 INFLUX_HOST = cfg.influxHost;
                 INFLUX_PORT = toString cfg.influxPort;
                 INFLUX_DATABASE = cfg.influxDatabase;
-                VERBOSE = cfg.verbose;
+                VERBOSE = lib.boolToString cfg.verbose;
                 CRONITOR_URL = cfg.cronitorUrl;
               };
 
