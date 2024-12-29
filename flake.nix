@@ -25,6 +25,12 @@
               description = "Path to restic password file";
             };
 
+            cacheDir = lib.mkOption {
+              type = lib.types.str;
+              default = "/var/cache/restic";
+              description = "Cache directory for restic";
+            };
+
             backupPathsFile = lib.mkOption {
               type = lib.types.str;
               description = "Path to backup paths file";
@@ -118,6 +124,7 @@
                 INFLUX_DATABASE = cfg.influxDatabase;
                 VERBOSE = lib.boolToString cfg.verbose;
                 CRONITOR_URL = cfg.cronitorUrl;
+                XDG_CACHE_HOME = cfg.cacheDir;
               };
 
               serviceConfig = {
