@@ -79,6 +79,12 @@
               description = "InfluxDB database name";
             };
 
+            verbose = lib.mkOption {
+              type = lib.types.bool;
+              default = false;
+              description = "Verbose logging";
+            };
+
             cronitorUrl = lib.mkOption {
               type = lib.types.str;
               default = "";
@@ -110,6 +116,7 @@
                 INFLUX_HOST = cfg.influxHost;
                 INFLUX_PORT = toString cfg.influxPort;
                 INFLUX_DATABASE = cfg.influxDatabase;
+                VERBOSE = lib.boolToString cfg.verbose;
                 CRONITOR_URL = cfg.cronitorUrl;
               };
 
@@ -181,7 +188,8 @@
           --keep-yearly "$KEEP_YEARLY" \
           --influx-host "$INFLUX_HOST" \
           --influx-port "$INFLUX_PORT" \
-          --influx-database "$INFLUX_DATABASE"
+          --influx-database "$INFLUX_DATABASE" \
+          --verbose "$VERBOSE"
 
         # Notify Cronitor if URL is defined
         if [ -v CRONITOR_URL ] && [ -n "$CRONITOR_URL" ]; then

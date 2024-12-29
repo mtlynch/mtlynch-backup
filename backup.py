@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 influx_writer = None
 
 
-def configure_logging():
+def configure_logging(verbose):
     root_logger = logging.getLogger()
     handler = logging.StreamHandler()
     formatter = logging.Formatter(
@@ -26,7 +26,11 @@ def configure_logging():
         '%Y-%m-%d %H:%M:%S')
     handler.setFormatter(formatter)
     root_logger.addHandler(handler)
-    root_logger.setLevel(logging.INFO)
+    log_level = logging.INFO
+    if verbose:
+        log_level = logging.DEBUG
+
+    root_logger.setLevel(log_level)
 
 
 def configure_influx(host, port, database):
@@ -186,7 +190,7 @@ def clear_environment_variables():
 
 
 def main(args):
-    configure_logging()
+    configure_logging(args.verbose)
     configure_influx(args.influx_host, args.influx_port, args.influx_database)
     if args.restic_path:
         restic.binary_path = args.restic_path
@@ -228,4 +232,5 @@ if __name__ == '__main__':
     parser.add_argument('--influx-host', type=str)
     parser.add_argument('--influx-port', type=int, default=8086)
     parser.add_argument('--influx-database', type=str)
+    parser.add_argument('--verbose', type=bool, default=False)
     main(parser.parse_args())
