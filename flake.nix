@@ -182,6 +182,11 @@
         # Install requirements
         pip install -r "$TMPDIR/requirements.txt"
 
+        VERBOSE_FLAG=""
+        if [[ "''${VERBOSE:-}" == "true" ]]; then
+            VERBOSE_FLAG="--verbose"
+        fi
+
         # Run backup script
         "$TMPDIR/backup.py" \
           --password-file "$PASSWORD_FILE" \
@@ -196,7 +201,7 @@
           --influx-host "$INFLUX_HOST" \
           --influx-port "$INFLUX_PORT" \
           --influx-database "$INFLUX_DATABASE" \
-          --verbose "$VERBOSE"
+          "$VERBOSE_FLAG"
 
         # Notify Cronitor if URL is defined
         if [ -v CRONITOR_URL ] && [ -n "$CRONITOR_URL" ]; then

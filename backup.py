@@ -232,5 +232,5 @@ if __name__ == '__main__':
     parser.add_argument('--influx-host', type=str)
     parser.add_argument('--influx-port', type=int, default=8086)
     parser.add_argument('--influx-database', type=str)
-    parser.add_argument('--verbose', type=bool, default=False)
+    parser.add_argument('--verbose', action='store_true', default=False)
     main(parser.parse_args())
