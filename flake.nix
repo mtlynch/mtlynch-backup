@@ -201,7 +201,7 @@
           --influx-host "$INFLUX_HOST" \
           --influx-port "$INFLUX_PORT" \
           --influx-database "$INFLUX_DATABASE" \
-          "$VERBOSE_FLAG"
+          $VERBOSE_FLAG
 
         # Notify Cronitor if URL is defined
         if [ -v CRONITOR_URL ] && [ -n "$CRONITOR_URL" ]; then
