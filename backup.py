@@ -118,19 +118,23 @@ def back_up(repo, backup_paths, exclude_patterns, exclude_files):
 
 def prune_backups(repo, forget_policy):
     logger.info('Pruning repo %s with policy=%s...', repo['url'], forget_policy)
+    forget_start_time = time.perf_counter()
     set_repo_environment_variables(repo)
     restic.unlock()
     restic.forget(prune=True, group_by='host', **forget_policy)
+    forget_duration = time.perf_counter() - forget_start_time
     logger.info('Prune complete')
+    logger.info('Duration: %s', human_time(forget_duration))
+    write_influx_measurment('forget_duration', forget_duration, repo_url=repo['url'])
 
 
 def check_stats(repo):
     logger.info('Retrieving stats for repo %s...', repo['url'])
-    stats_start_time = time.time()
+    stats_start_time = time.perf_counter()
     set_repo_environment_variables(repo)
     restic.unlock()
     stats_result = restic.stats(mode='files-by-contents')
-    stats_result['stats_duration'] = time.time() - stats_start_time
+    stats_result['stats_duration'] = time.perf_counter() - stats_start_time
     log_stats_result(stats_result)
     write_dict_to_influx(stats_result, repo['url'])
 
