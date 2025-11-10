@@ -67,6 +67,10 @@ def process_repos(repos, backup_paths, exclude_patterns, exclude_files,
 def process_repo(repo, backup_paths, exclude_patterns, exclude_files,
                  forget_policy):
         back_up(repo, backup_paths, exclude_patterns, exclude_files)
+        if exclude_patterns or exclude_files:
+            rewrite_backups(repo, exclude_patterns, exclude_files)
+        else:
+            logger.info('Skipping rewrite because nothing would be removed')
         if forget_policy:
             prune_backups(repo, forget_policy)
         else:
@@ -115,6 +119,16 @@ def back_up(repo, backup_paths, exclude_patterns, exclude_files):
     log_backup_result(result)
     write_dict_to_influx(result, repo['url'], exclude_keys=['message_type', 'snapshot_id'])
 
+
+def rewrite_backups(repo, exclude_patterns, exclude_files):
+    exclude_pattern = exclude_patterns[0] if exclude_patterns else None
+    exclude_file = exclude_files[0] if exclude_files else None
+    logger.info('Rewriting repo %s to forget excludes...', repo['url'])
+    set_repo_environment_variables(repo)
+    restic.unlock()
+    restic.rewrite(exclude=exclude_pattern, exclude_file=exclude_file,
+                   forget=True)
+    logger.info('Rewrite complete')
 
 def prune_backups(repo, forget_policy):
     logger.info('Pruning repo %s with policy=%s...', repo['url'], forget_policy)
