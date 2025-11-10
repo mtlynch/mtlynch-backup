@@ -124,11 +124,15 @@ def rewrite_backups(repo, exclude_patterns, exclude_files):
     exclude_pattern = exclude_patterns[0] if exclude_patterns else None
     exclude_file = exclude_files[0] if exclude_files else None
     logger.info('Rewriting repo %s to forget excludes...', repo['url'])
+    rewrite_start_time = time.perf_counter()
     set_repo_environment_variables(repo)
     restic.unlock()
     restic.rewrite(exclude=exclude_pattern, exclude_file=exclude_file,
                    forget=True)
+    rewrite_duration = time.perf_counter() - rewrite_start_time
     logger.info('Rewrite complete')
+    logger.info('Duration: %s', human_time(rewrite_duration))
+    write_influx_measurment('rewrite_duration', rewrite_duration, repo_url=repo['url'])
 
 def prune_backups(repo, forget_policy):
     logger.info('Pruning repo %s with policy=%s...', repo['url'], forget_policy)
