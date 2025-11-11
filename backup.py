@@ -153,6 +153,7 @@ def check_stats(repo):
     restic.unlock()
     stats_result = restic.stats(mode='files-by-contents')
     stats_result['stats_duration'] = time.perf_counter() - stats_start_time
+    logger.info('stats_result: %s', stats_result)
     log_stats_result(stats_result)
     write_dict_to_influx(stats_result, repo['url'])
 
