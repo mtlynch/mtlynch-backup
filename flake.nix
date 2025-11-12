@@ -7,8 +7,8 @@
     # 3.12.5 release
     python-nixpkgs.url = "github:NixOS/nixpkgs/5ed627539ac84809c78b2dd6d26a5cebeb5ae269";
 
-    # 0.17.3 release
-    restic-nixpkgs.url = "github:NixOS/nixpkgs/566e53c2ad750c84f6d31f9ccb9d00f823165550";
+    # 0.18.1 release
+    restic-nixpkgs.url = "github:NixOS/nixpkgs/01b6809f7f9d1183a2b3e081f0a1e6f8f415cb09";
   };
 
   outputs = { self, flake-utils, python-nixpkgs, restic-nixpkgs }@inputs :
