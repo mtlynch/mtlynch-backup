@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+
+# Number of largest files to display
+TOP_N = 1000
+# Number of largest directories to display
+TOP_N_DIRS = 100
+
+
+def human_size(bytes_size):
+    """Convert bytes to human-readable format."""
+    units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
+    unit_index = 0
+    size = float(bytes_size)
+
+    while size >= 1024.0 and unit_index < len(units) - 1:
+        size /= 1024.0
+        unit_index += 1
+
+    return f"{size:.1f} {units[unit_index]}"
+
+
+def filter_parent_directories(dir_list):
+    """
+    Filter out parent directories when their subdirectories are present.
+
+    Args:
+        dir_list: List of (size, path) tuples
+
+    Returns:
+        Filtered list with parent directories removed
+    """
+    if not dir_list:
+        return dir_list
+
+    # Extract just the paths for easier checking
+    paths = [path for _, path in dir_list]
+
+    # Filter out directories that have subdirectories in the list
+    filtered = []
+    for size, path in dir_list:
+        # Check if any other path in the list is a subdirectory of this path
+        has_subdirectory = False
+        for other_path in paths:
+            if other_path != path:
+                # Check if other_path is a subdirectory of path
+                # Special case for root directory
+                if path == '/':
+                    # Any path starting with / (except /) is a subdirectory of root
+                    if other_path.startswith('/') and other_path != '/':
+                        has_subdirectory = True
+                        break
+                else:
+                    # A path is a subdirectory if it starts with path + '/'
+                    if other_path.startswith(path + '/'):
+                        has_subdirectory = True
+                        break
+
+        # Only include this directory if it has no subdirectories in the list
+        if not has_subdirectory:
+            filtered.append((size, path))
+
+    return filtered
+
+
+def main():
+    print("Reading file list from stdin...", file=sys.stderr)
+
+    # Read all lines from stdin
+    lines = sys.stdin.readlines()
+
+    # Skip the first line (snapshot status line)
+    paths = [line.strip() for line in lines[1:]]
+
+    total_paths = len(paths)
+    print(f"Total paths to check: {total_paths:,}", file=sys.stderr)
+    print("Processing files and checking sizes...", file=sys.stderr)
+
+    # Collect file sizes and directory sizes
+    file_sizes = []
+    dir_sizes = {}  # Dictionary to track total size per directory
+    checked_count = 0
+    file_count = 0
+
+    for path in paths:
+        checked_count += 1
+
+        # Show progress every 1000 paths
+        if checked_count % 1000 == 0:
+            print(f"Checked {checked_count:,} paths, found {file_count:,} files...",
+                  file=sys.stderr)
+
+        # Check if path exists and is a regular file
+        if os.path.isfile(path):
+            try:
+                size = os.path.getsize(path)
+                file_sizes.append((size, path))
+                file_count += 1
+
+                # Add size to all parent directories
+                current_dir = os.path.dirname(path)
+                while current_dir and current_dir != '/':
+                    dir_sizes[current_dir] = dir_sizes.get(current_dir, 0) + size
+                    current_dir = os.path.dirname(current_dir)
+                # Also count root directory
+                if path.startswith('/'):
+                    dir_sizes['/'] = dir_sizes.get('/', 0) + size
+            except (OSError, IOError) as e:
+                # Skip files we can't access
+                pass
+
+    print(f"Found {file_count:,} files total", file=sys.stderr)
+    print("Sorting files by size...", file=sys.stderr)
+
+    # Sort by size (descending) and take top N
+    file_sizes.sort(reverse=True, key=lambda x: x[0])
+    top_n = file_sizes[:TOP_N]
+
+    print(f"Displaying top {TOP_N} largest files:", file=sys.stderr)
+    print("", file=sys.stderr)
+
+    # Display results
+    for size, path in top_n:
+        print(f"{human_size(size):>12}  {path}")
+
+    # Sort directories by size and display top N
+    print("", file=sys.stderr)
+    print("Sorting directories by size...", file=sys.stderr)
+    dir_sizes_list = [(size, path) for path, size in dir_sizes.items()]
+    dir_sizes_list.sort(reverse=True, key=lambda x: x[0])
+    top_n_dirs = dir_sizes_list[:TOP_N_DIRS]
+
+    # Filter out parent directories
+    print("Filtering parent directories...", file=sys.stderr)
+    filtered_dirs = filter_parent_directories(top_n_dirs)
+
+    print(f"Displaying top {len(filtered_dirs)} largest directories (parent directories filtered):", file=sys.stderr)
+    print("", file=sys.stderr)
+
+    for size, path in filtered_dirs:
+        print(f"{human_size(size):>12}  {path}")
+
+
+if __name__ == '__main__':
+    main()

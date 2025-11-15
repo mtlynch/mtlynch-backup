@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+set -eux
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source the common restic environment loader
+. "${SCRIPT_DIR}/lib/load-restic-env.sh"
+
+if [ $# -eq 0 ]; then
+  echo "Usage: $0 <env-file> [snapshot-id]" >&2
+  exit 1
+fi
+
+readonly ENV_FILE="$1"
+
+# Set snapshot ID from second argument, default to "latest"
+readonly SNAPSHOT_ID="${2:-latest}"
+
+# Load restic environment from the provided .env file
+load_restic_env "${ENV_FILE}"
+
+restic unlock
+
+restic ls "${SNAPSHOT_ID}"

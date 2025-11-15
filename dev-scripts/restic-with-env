@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+# Script to run restic commands with environment variables from a .env file
+# Usage: ./dev-scripts/restic-with-env <env-file> <restic-command> [args...]
+# Example: ./dev-scripts/restic-with-env .env.test ls latest
+
+set -e
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source the common restic environment loader
+. "${SCRIPT_DIR}/lib/load-restic-env.sh"
+
+if [ $# -lt 2 ]; then
+  echo "Usage: $0 <env-file> <restic-command> [args...]" >&2
+  echo "Example: $0 .env.test ls latest" >&2
+  exit 1
+fi
+
+readonly ENV_FILE="$1"
+shift  # Remove the env file from arguments, leaving only restic command and args
+
+# Load restic environment from the provided .env file
+load_restic_env "${ENV_FILE}"
+
+# Execute restic with the remaining arguments
+exec restic "$@"
